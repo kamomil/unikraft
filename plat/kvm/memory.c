@@ -44,7 +44,7 @@ int ukplat_memregion_get(int i, struct ukplat_memregion_desc *m)
 
 	switch (i) {
 	case 0: /* text */
-		m->base  = &_stext;
+		m->base  = _stext;
 		m->len   = (size_t) &_etext - (size_t) &_stext;
 		m->flags = (UKPLAT_MEMRF_RESERVED
 			    | UKPLAT_MEMRF_READABLE);

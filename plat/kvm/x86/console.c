@@ -102,7 +102,7 @@ void _libkvmplat_init_console(void)
 
         terminal_row = 0;
         terminal_column = 0;
-        terminal_color = make_color(COLOR_LIGHT_GREY, COLOR_BLACK);
+        terminal_color = make_color(COLOR_RED, COLOR_BLACK);
         terminal_buffer = (uint16_t*) 0xB8000;
         for (size_t y = 0; y < VGA_HEIGHT; y++) {
                 for (size_t x = 0; x < VGA_WIDTH; x++) {
@@ -130,13 +130,19 @@ static void serial_write(char c, uint8_t color, size_t x, size_t y)
 
 static void serial_putc(char c)
 {
+    if(c == 10 || c == 13){
+        terminal_column = 0;
+        if (++terminal_row == VGA_HEIGHT)
+            terminal_row = 0;
+    }
+    else{
         serial_write(c, terminal_color, terminal_column, terminal_row);
         if (++terminal_column == VGA_WIDTH) {
                 terminal_column = 0;
-                if (++terminal_row == VGA_HEIGHT) {
+                if (++terminal_row == VGA_HEIGHT)
                         terminal_row = 0;
-                }
         }
+    }
 }
 
 static int serial_rx_ready(void)
