@@ -36,6 +36,167 @@
 #define MYMULTIBOOT_FLAGS \
     (MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_AOUT_KLUDGE)
 
+    /*
+     * Exception entry point. This expects an error code/orig_rax on the stack
+	 * and the exception handler in %rax.
+	 */
+
+#define RAX       80
+#define RDI      112
+#define ORIG_RAX 120       /* + error_code */
+#define RIP      128
+#define CS       136
+#define RFLAGS   144
+#define RSP      152
+
+.macro RESTORE_ALL
+movq (%rsp),%r15
+movq 1*8(%rsp),%r14
+movq 2*8(%rsp),%r13
+movq 3*8(%rsp),%r12
+movq 4*8(%rsp),%rbp
+movq 5*8(%rsp),%rbx
+movq 6*8(%rsp),%r11
+movq 7*8(%rsp),%r10
+movq 8*8(%rsp),%r9
+movq 9*8(%rsp),%r8
+movq 10*8(%rsp),%rax
+movq 11*8(%rsp),%rcx
+movq 12*8(%rsp),%rdx
+movq 13*8(%rsp),%rsi
+movq 14*8(%rsp),%rdi
+addq $15*8+8,%rsp
+.endm
+
+.macro SAVE_ALL
+/* rdi slot contains rax, oldrax contains error code */
+cld
+subq $14*8,%rsp
+movq %rsi,13*8(%rsp)
+movq 14*8(%rsp),%rsi	/* load rax from rdi slot */
+movq %rdx,12*8(%rsp)
+movq %rcx,11*8(%rsp)
+movq %rsi,10*8(%rsp)	/* store rax */
+movq %r8, 9*8(%rsp)
+movq %r9, 8*8(%rsp)
+movq %r10,7*8(%rsp)
+movq %r11,6*8(%rsp)
+movq %rbx,5*8(%rsp)
+movq %rbp,4*8(%rsp)
+movq %r12,3*8(%rsp)
+movq %r13,2*8(%rsp)
+movq %r14,1*8(%rsp)
+movq %r15,(%rsp)
+movq %rdi, RDI(%rsp)	/* put rdi into the slot */
+.endm
+
+error_entry:
+SAVE_ALL
+
+movq %rsp,%rdi
+movq ORIG_RAX(%rsp),%rsi	# get error code
+movq $-1,ORIG_RAX(%rsp)
+call *%rax
+    RESTORE_ALL
+    popq %r10
+#    add $0x4, %r10
+    pushq %r10
+    cli
+    hlt
+forever:
+    jmp forever
+
+
+
+iretq
+
+/*jmp error_exit*/
+
+
+.macro zeroentry sym
+pushq $0	/* push error code/oldrax */
+pushq %rax	/* push real oldrax to the rdi slot */
+leaq  \sym(%rip),%rax
+jmp error_entry
+.endm
+
+.macro errorentry sym
+pushq %rax
+leaq  \sym(%rip),%rax
+jmp error_entry
+.endm
+
+ENTRY(coprocessor_error)
+    zeroentry do_coprocessor_error
+    iret
+END(coprocessor_error)
+
+ENTRY(simd_coprocessor_error)
+        zeroentry do_simd_coprocessor_error
+END(simd_coprocessor_error)
+
+ENTRY(device_not_available)
+        zeroentry do_device_not_available
+END(device_not_available)
+
+ENTRY(debug)
+        zeroentry do_debug
+END(debug)
+
+ENTRY(int3)
+        zeroentry do_int3
+END(int3)
+
+ENTRY(overflow)
+        zeroentry do_overflow
+END(overflow)
+
+ENTRY(bounds)
+        zeroentry do_bounds
+END(bounds)
+
+ENTRY(invalid_op)
+        zeroentry do_invalid_op
+END(invalid_op)
+
+ENTRY(coprocessor_segment_overrun)
+        zeroentry do_coprocessor_segment_overrun
+END(coprocessor_segment_overrun)
+
+ENTRY(invalid_TSS)
+        errorentry do_invalid_TSS
+END(invalid_TSS)
+
+ENTRY(segment_not_present)
+        errorentry do_segment_not_present
+END(segment_not_present)
+
+/* runs on exception stack */
+ENTRY(stack_segment)
+        errorentry do_stack_segment
+END(stack_segment)
+
+ENTRY(general_protection)
+        errorentry do_general_protection
+END(general_protection)
+
+ENTRY(alignment_check)
+        errorentry do_alignment_check
+END(alignment_check)
+
+ENTRY(divide_error)
+    zeroentry do_divide_error
+    iret
+END(divide_error)
+
+ENTRY(spurious_interrupt_bug)
+        zeroentry do_spurious_interrupt_bug
+END(spurious_interrupt_bug)
+
+ENTRY(page_fault)
+        errorentry do_page_fault
+END(page_fault)
+
 .section .data.multiboot
 
 .align 4

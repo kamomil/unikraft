@@ -82,5 +82,34 @@
 #define GDT_DESC_OFFSET(n)      ((n) * 0x8)
 #define GDT_NUM_ENTRIES         6
 
+/*
+
+  base  = 0x00000000
+  limit = fffff
+                        present  privl(ring0)       executable     direction    read/write    acc
+  access bytes = 0x99 = 1        00            1    1              0            0             1
+
+                granularity(4kb)
+  flags = 0xa = 1                  011
+
+    b  f  l  acc   base   limit
+  0x00 a  f  99    000000 ffff
+ */
 #define GDT_DESC_CODE_VAL       0x00af99000000ffff
+
+/*
+
+  base  = 0x00000000
+  limit = fffff
+                        present  privl(ring0)       executable     direction    read/write    acc
+  access bytes = 0x93 = 1        00            1    0              0            1             1
+
+                granularity(4kb)
+  flags = 0xc = 1                  100
+
+    b  f  l  acc   base   limit
+  0x00 c  f  93    000000 ffff
+*/
+
+
 #define GDT_DESC_DATA_VAL       0x00cf93000000ffff

@@ -35,7 +35,7 @@ void ukplat_terminate(enum ukplat_gstate request __unused)
 	 * tests on virtio.  Note that the actual QEMU exit() status will
 	 * be 83 ('S', 41 << 1 | 1).
 	 */
-	uk_printk("Unikraft halted\n");
+	uk_printk("Unikraft halted %d\n",request);
 	outw(0x501, 41);
 
 	/*

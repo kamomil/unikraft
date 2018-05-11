@@ -36,6 +36,7 @@
 #include <uk/plat/console.h>
 #include <uk/assert.h>
 #include <uk/essentials.h>
+#include <kvm-x86/traps.h>
 
 #define PLATFORM_MEM_START 0x100000
 #define PLATFORM_MAX_MEM_ADDR 0x40000000
@@ -49,6 +50,11 @@ void *_libkvmplat_mem_end;
 
 extern void _libkvmplat_newstack(uint64_t stack_start, void (*tramp)(void *),
 				void *arg);
+
+static inline void _init_traps(void)
+{
+	trap_init();
+}
 
 static inline void _mb_get_cmdline(struct multiboot_info *mi, char *cmdline,
 				   size_t maxlen)
@@ -132,6 +138,7 @@ void _libkvmplat_entry(void *arg)
 {
 	struct multiboot_info *mi = (struct multiboot_info *)arg;
 
+    _init_traps();
 	_libkvmplat_init_console();
 	_init_cpufeatures();
 	cpu_init();
